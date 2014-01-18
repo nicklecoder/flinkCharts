@@ -2,10 +2,24 @@
 
 	$.fn.flinkchart.line = {
 		defaults: {
-			gridLineColor: "#DDDDDD",
-			gridLineWidth: '1px',
 			xPad: 30,
-			yPad: 30
+			yPad: 30,
+			gridLineColor: "#DDDDDD",
+			gridLineWidth: 1.5,
+			gridSubdivide: 8,
+			gridSubWidth: 1.5,
+			gridSubStyle: "#AAA",
+			showBg: true,
+			bgColor: "#FFFFFF",
+			cellSize: 10,
+			lineColor: "#000",
+			lineWidth: 2,
+			showXAxis: false,
+			showYAxis: false,
+			xAxisColor: "#000",
+			yAxisColor: "#000",
+			xAxisWidth: 2,
+			yAxisWidth: 2
 		},
 		methods: {
 			
@@ -23,17 +37,27 @@
 				//pre-compute some values
 				this.xWidth = (this.el.width() - 2 * this.opts.xPad);
 				this.yHeight = (this.el.height() - 2 * this.opts.yPad);
-				var minMaxX = this.getMinMaxX();
-				var minMaxY = this.getMinMaxY();
-				this.xRange = minMaxX[1] - minMaxX[0];
+				this.minMaxX = this.getMinMaxX();
+				this.minMaxY = this.getMinMaxY();
+				this.xRange = this.minMaxX[1] - this.minMaxX[0];
 				this.xScale = this.xWidth / this.xRange;
-				this.yRange = minMaxY[1] - minMaxX[0];
+				this.yRange = this.minMaxY[1] - this.minMaxX[0];
 				this.yScale = this.yHeight / this.yRange;
 				if(this.opts.xSlots) {
-					this.xSlotUnit = this.xWidth / (this.opts.xSlots.length - 1);
+					this.xSlots = this.opts.xSlots;
+					this.xSlotUnit = this.xWidth / (this.opts.xSlots.length);
+					this.xSlotCount = this.opts.xSlots.length;
+				} else {
+					this.xSlotUnit = this.opts.cellSize;
+					this.xSlotCount = Math.ceil(this.xWidth / this.xSlotUnit);
 				}
 				if(this.opts.ySlots) {
-					this.ySlotUnit = this.yHeight / (this.opts.ySlots.length - 1);
+					this.ySlots = this.opts.ySlots;
+					this.ySlotCount = this.opts.ySlots.length;
+					this.ySlotUnit = this.yHeight / (this.opts.ySlots.length);
+				} else {
+					this.ySlotUnit = this.opts.cellSize;
+					this.ySlotCount = Math.ceil(this.yHeight / this.ySlotUnit);
 				}
 				
 				//return this for chaining
@@ -79,23 +103,31 @@
 			},
 			
 			getXPixel: function(val) {
-				return val * this.xScale + this.opts.xPad;
+				return (val - this.minMaxX[0]) * this.xScale + this.opts.xPad + 0.5;
 			},
 			
 			getXSlot: function(val) {
-				return val * this.xSlotUnit + this.opts.xPad;
+				return val * this.xSlotUnit + this.opts.xPad + 0.5;
 			},
 			
 			getYPixel: function(val) {
-				return this.el.height() - (val * this.yScale + this.opts.yPad);
+				return this.el.height() - ((val - this.minMaxY[0]) * this.yScale + this.opts.yPad) + 0.5;
 			},
 			
 			getYSlot: function(val) {
-				return this.el.height() - (val * this.ySlotUnit + this.opts.yPad);
+				return this.el.height() - (val * this.ySlotUnit + this.opts.yPad) + 0.5;
 			},
 			
 			drawBackground: function() {
-				console.log("drawing background not implemented");
+				this.ctx.save();
+				if(typeof this.opts.bgImage !== "undefined") {
+					//TODO: set background image
+					console.log("Background Image not implemented");
+				} else {
+					this.ctx.fillStyle = this.opts.bgColor;
+					this.ctx.fillRect(0, 0, this.el.width(), this.el.height());
+				}
+				this.ctx.restore();
 			},
 			
 			drawGrid: function() {
@@ -103,37 +135,191 @@
 				//set styles here
 				this.ctx.strokeStyle = this.opts.gridLineColor;
 				this.ctx.lineWidth = this.opts.gridLineWidth;
-				if(this.opts.xSlots) {
-					for(var i = 0; i < this.opts.xSlots.length; i++) {
-						this.ctx.moveTo(this.getXSlot(i), this.opts.yPad - 1);
-						this.ctx.lineTo(this.getXSlot(i), this.el.height() - (this.opts.yPad - 1));
+				if(this.opts.gridSubdivide) {
+					for(var i = 0; i <= this.xSlotCount; i++) {
+						if(i % this.opts.gridSubdivide == 0) {
+							continue;
+						} else {
+							this.ctx.beginPath();
+							this.ctx.lineWidth = this.opts.gridLineWidth;
+							this.ctx.strokeStyle = this.opts.gridLineColor;
+							this.ctx.moveTo(this.getXSlot(i), this.getYSlot(0));
+							this.ctx.lineTo(this.getXSlot(i), this.getYSlot(this.ySlotCount));
+							this.ctx.stroke();
+						}
+					}
+					for(var i = 0; i <= this.ySlotCount; i++) {
+						if(i % this.opts.gridSubdivide == 0) {
+							continue;
+						} else {
+							this.ctx.beginPath();
+							this.ctx.moveTo(this.getXSlot(0), this.getYSlot(i));
+							this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(i));
+							this.ctx.stroke();
+							this.ctx.closePath();
+						}
+					}
+					this.ctx.lineWidth = this.opts.gridSubWidth;
+					this.ctx.strokeStyle = this.opts.gridSubStyle;
+					for(var i = 0; i <= this.xSlotCount; i += this.opts.gridSubdivide) {
+						this.ctx.beginPath();
+						this.ctx.moveTo(this.getXSlot(i), this.getYSlot(0));
+						this.ctx.lineTo(this.getXSlot(i), this.getYSlot(this.ySlotCount));
 						this.ctx.stroke();
 					}
-				} else {
-					console.log("continuous draw for x grid not implemented");
-				}
-				if(this.opts.ySlots) {
-					for(var i = 0; i < this.opts.ySlots.length; i++) {
-						this.ctx.moveTo(this.opts.xPad - 1, this.getYSlot(i));
-						this.ctx.lineTo(this.el.width() - this.opts.xPad, this.getYSlot(i));
+					for(var i = 0; i <= this.ySlotCount; i += this.opts.gridSubdivide) {
+						this.ctx.beginPath();
+						this.ctx.moveTo(this.getXSlot(0), this.getYSlot(i));
+						this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(i));
 						this.ctx.stroke();
+						this.ctx.closePath();
 					}
 				} else {
-					console.log("continuous draw for y grid not implemented");
+					for(var i = 0; i <= this.xSlotCount; i++) {
+						this.ctx.beginPath();
+						this.ctx.moveTo(this.getXSlot(i), this.getYSlot(0));
+						this.ctx.lineTo(this.getXSlot(i), this.getYSlot(this.ySlotCount));
+						this.ctx.stroke();
+						this.ctx.closePath();
+					}
+					for(var i = 0; i <= this.ySlotCount; i++) {
+						this.ctx.beginPath();
+						this.ctx.moveTo(this.getXSlot(0), this.getYSlot(i));
+						this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(i));
+						this.ctx.stroke();
+						this.ctx.closePath();
+					}
 				}
 				this.ctx.restore();
 			},
 			
+			drawUnderfill: function() {
+				console.log("drawing underfill not implemented");
+			},
+			
 			drawLines: function() {
-				console.log("drawing lines not implemented");
+				this.ctx.save();
+				if(this.xSlots) {
+					if(this.ySlots) {
+						for(var line in this.lines) {
+							line = this.lines[line];
+							//1: set styles
+							if(line.style) {
+								//if line-specific styles, use them.
+								this.ctx.strokeStyle = line.style.color;
+								this.ctx.lineWidth = line.style.width;
+							} else {
+								//else use globals
+								this.ctx.strokeStyle = this.opts.lineColor;
+								this.ctx.lineWidth = this.opts.lineWidth;
+							}
+							//2: loop through points
+							this.ctx.beginPath();
+							this.ctx.moveTo(this.getXSlot(line.xData[0]), this.getYSlot(line.yData[0]));
+							for(var i = 1; i < line.xData.length; i++) {
+								this.ctx.lineTo(this.getXSlot(line.xData[i]), this.getYSlot(line.yData[i]));
+								this.ctx.stroke();
+							}
+							this.ctx.closePath();
+						}
+					} else {
+						for(var line in this.lines) {
+							line = this.lines[line];
+							//1: set styles
+							if(line.style) {
+								//if line-specific styles, use them.
+								this.ctx.strokeStyle = line.style.color;
+								this.ctx.lineWidth = line.style.width;
+							} else {
+								//else use globals
+								this.ctx.strokeStyle = this.opts.lineColor;
+								this.ctx.lineWidth = this.opts.lineWidth;
+							}
+							//2: loop through points
+							this.ctx.beginPath();
+							this.ctx.moveTo(this.getXSlot(line.xData[0]), this.getYPixel(line.yData[0]));
+							for(var i = 1; i < line.xData.length; i++) {
+								this.ctx.lineTo(this.getXSlot(line.xData[i]), this.getYPixel(line.yData[i]));
+								this.ctx.stroke();
+							}
+							this.ctx.closePath();
+						}
+					}
+				} else {
+					if(this.ySlots) {
+						for(var line in this.lines) {
+							line = this.lines[line];
+							//1: set styles
+							if(line.style) {
+								//if line-specific styles, use them.
+								this.ctx.strokeStyle = line.style.color;
+								this.ctx.lineWidth = line.style.width;
+							} else {
+								//else use globals
+								this.ctx.strokeStyle = this.opts.lineColor;
+								this.ctx.lineWidth = this.opts.lineWidth;
+							}
+							//2: loop through points
+							this.ctx.beginPath();
+							this.ctx.moveTo(this.getXPixel(line.xData[0]), this.getYSlot(line.yData[0]));
+							for(var i = 1; i < line.xData.length; i++) {
+								this.ctx.lineTo(this.getXPixel(line.xData[i]), this.getYSlot(line.yData[i]));
+								this.ctx.stroke();
+							}
+							this.ctx.closePath();
+						}
+					} else {
+						//continuous x, continuous y
+						for(var line in this.lines) {
+							line = this.lines[line];
+							//1: set styles
+							if(line.style) {
+								//if line-specific styles, use them.
+								this.ctx.strokeStyle = line.style.color;
+								this.ctx.lineWidth = line.style.width;
+							} else {
+								//else use globals
+								this.ctx.strokeStyle = this.opts.lineColor;
+								this.ctx.lineWidth = this.opts.lineWidth;
+							}
+							//2: loop through points
+							this.ctx.beginPath();
+							this.ctx.moveTo(this.getXPixel(line.xData[0]), this.getYPixel(line.yData[0]));
+							for(var i = 1; i < line.xData.length; i++) {
+								this.ctx.lineTo(this.getXPixel(line.xData[i]), this.getYPixel(line.yData[i]));
+								this.ctx.stroke();
+							}
+							this.ctx.closePath();
+						}
+					}
+				}
+				this.ctx.restore();
 			},
 			
 			drawXAxis: function() {
-				console.log("drawing x-axis not implemented");
+				this.ctx.save();
+				//1: set axis styles
+				this.ctx.beginPath();
+				this.ctx.strokeStyle = this.opts.xAxisColor;
+				this.ctx.lineWidth = this.opts.xAxisWidth;
+				this.ctx.moveTo(this.getXSlot(0), this.getYSlot(0));
+				this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(0));
+				this.ctx.stroke();
+				this.ctx.closePath();
+				this.ctx.restore();
 			},
 			
 			drawYAxis: function() {
-				console.log("drawing y-axis not implemented");
+				this.ctx.save();
+				//1: set axis styles
+				this.ctx.beginPath();
+				this.ctx.strokeStyle = this.opts.yAxisColor;
+				this.ctx.lineWidth = this.opts.yAxisWidth;
+				this.ctx.moveTo(this.getXSlot(0), this.getYSlot(0));
+				this.ctx.lineTo(this.getXSlot(0), this.getYSlot(this.ySlotCount));
+				this.ctx.stroke();
+				this.ctx.closePath();
+				this.ctx.restore();
 			},
 			
 			drawXLabels: function() {
@@ -145,7 +331,7 @@
 			},
 			
 			draw: function() {
-				if(this.opts.showBackground) {
+				if(this.opts.showBg) {
 					this.drawBackground();
 				}
 				if(this.opts.showGrid) {

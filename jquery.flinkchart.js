@@ -17,9 +17,8 @@
 				}
 				switch(type) {
 					case "line":
-						if(typeof $.fn.nchart.line.LineChart === "function") {
-							console.log("class detected");
-							$.data(this, 'api_' + name, new $.fn.nchart.line.LineChart($(this), optsOrMethod));
+						if(typeof $.fn.flinkchart.line.LineChart === "function") {
+							$.data(this, 'api_' + name, new $.fn.flinkchart.line.LineChart($(this), optsOrMethod));
 						}
 						break;
 					default:
