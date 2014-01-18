@@ -5,6 +5,6 @@ The goal behind this project is to create a simple, open, and powerful jQuery ch
 
 Target support is for jQuery 2.0.3 for initial release, though this is highly dependent on the chart libraries themselves. The code currently has nothing in it that won't run in jQuery 1.6.1.
 
-Each chart type shall be encapsulated in its own .js file and shall be declared within the `nchart` namespace. This allows users to choose which chart types they want support for without including a lot of other code that they will not use. It also allows chart-specific bugs to be limited to their corresponding files.
+Each chart type shall be encapsulated in its own .js file and shall be declared within the `flinkchart` namespace. This allows users to choose which chart types they want support for without including a lot of other code that they will not use. It also allows chart-specific bugs to be limited to their corresponding files.
 
 Please let me know if you would like to contribute! Any help or suggestions are welcome, as I am new to github and jQuery plugin programming.
