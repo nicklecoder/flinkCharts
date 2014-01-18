@@ -1,6 +1,6 @@
 (function($) {
 
-	$.fn.nchart.line = {
+	$.fn.flinkchart.line = {
 		defaults: {
 			gridLineColor: "#DDDDDD",
 			gridLineWidth: '1px',
@@ -12,12 +12,12 @@
 			init: function(el, opts) {
 				this.el = el;
 				if(typeof opts === "undefined") {
-					throw new Error("nCharts: no options defined");
+					throw new Error("flinkCharts: no options defined");
 				}
 				this.lines = opts.lines;
 				delete opts["lines"];
 				
-				this.opts = $.extend({}, $.fn.nchart.line.defaults, opts);
+				this.opts = $.extend({}, $.fn.flinkchart.line.defaults, opts);
 				this.ctx = this.el[0].getContext("2d");
 				
 				//pre-compute some values
@@ -181,8 +181,8 @@
 		/************************************ END METHODS *****************/
 		
 		LineChart: function(el, opts) {
-			for(var method in $.fn.nchart.line.methods) {
-				this[method] = $.fn.nchart.line.methods[method];
+			for(var method in $.fn.flinkchart.line.methods) {
+				this[method] = $.fn.flinkchart.line.methods[method];
 			}
 			//clear before draw; there might be stuff there.
 			this.init(el, opts).clear().draw();
