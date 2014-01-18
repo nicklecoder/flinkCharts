@@ -1,5 +1,5 @@
-nCharts
-=======
+flinkCharts
+===========
 
 The goal behind this project is to create a simple, open, and powerful jQuery chart/plot library based on the HTML5 canvas element with support for various different kinds of charts and plots and with a smart api and sensible defaults. This is in response to the overall lack of open charting libraries of quality for javascript.
 
