@@ -9,7 +9,7 @@ Each chart type shall be encapsulated in its own .js file and shall be declared 
 
 Please let me know if you would like to contribute! Any help or suggestions are welcome, as I am new to github and jQuery plugin programming.
 
-To make a simple line chart, create an HTML5 canvas and call `.flinkchart()` on it, making sure to feed flinkCharts an options hash that includes a has called `lines`:
+To make a simple line chart, create an HTML5 canvas and call `.flinkchart()` on it, making sure to feed flinkCharts an options hash that includes a hash called `lines` with arrays `xData` and `yData`:
 
 ```
 $('#graph').flinkchart({
@@ -21,3 +21,11 @@ $('#graph').flinkchart({
     }
 });
 ```
+
+This call currently produces:
+
+![FlinkCharts Line Chart](/images/flinkchart::linechart2014-01-18::14:59:55.png "Basic Line Chart")
+
+Documentation is coming; currently, the line graph supports discrete and continuous standards for plotting x and y data. For example, if your entire data set has only 5 values that y can be set to, use the `discreteY: true` option, and the same for x values. However, if you are, for example, graphing a data set that includes points that are not evenly distributed in x, use continuous scaling (the default), and the same goes for non-even distributions in y-data.
+
+
