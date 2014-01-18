@@ -13,12 +13,15 @@ To make a simple line chart, create an HTML5 canvas and call `.flinkchart()` on 
 
 ```
 $('#graph').flinkchart({
-    lines: {
-        line1: {
-            xData: [1, 2, 3, 4, 5],
-            yData: [2, 3, 2, 5, 4]
-        }
-    }
+	lines: {
+		l1: {
+			xData: [1, 2, 3, 4, 5],
+			yData: [2, 1, 5, 8, 3]
+		}
+	},
+	showGrid: true,
+	showXAxis: true,
+	showYAxis: true
 });
 ```
 
