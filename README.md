@@ -11,7 +11,7 @@ Please let me know if you would like to contribute! Any help or suggestions are 
 
 To make a simple line chart, create an HTML5 canvas and call `.flinkchart()` on it, making sure to feed flinkCharts an options hash that includes a has called `lines`:
 
-`
+```
 $('#graph').flinkchart({
     lines: {
         line1: {
@@ -20,4 +20,4 @@ $('#graph').flinkchart({
         }
     }
 });
-`
+```
