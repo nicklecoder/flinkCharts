@@ -1,11 +1,11 @@
 (function($) {
-	var name = "nCharts";
+	var name = "flinkCharts";
 	
-	$.fn.nchart = function(optsOrMethod) {
+	$.fn.flinkchart = function(optsOrMethod) {
 		return $(this).filter("canvas").each(function() {
 			if(!$.data(this, "api_" + name)) {
 				if(optsOrMethod && $.type(optsOrMethod) !== "object") {
-					throw new Error("nCharts: invalid options format");
+					throw new Error("flinkCharts: invalid options format");
 				}
 				var type = null;
 				if($(this).data("chart")) {
@@ -13,7 +13,7 @@
 				} else if(optsOrMethod.chart) {
 					type = optsOrMethod.chart;
 				} else {
-					throw new Error("nCharts: no chart parameter given");
+					throw new Error("flinkCharts: no chart parameter given");
 				}
 				switch(type) {
 					case "line":
@@ -23,7 +23,7 @@
 						}
 						break;
 					default:
-						throw new Error("nCharts: " + type + " is not a valid chart type");
+						throw new Error("flinkCharts: " + type + " is not a valid chart type");
 						break;
 				}
 			} else if($.isFunction($(this).data("api_" + name)[optsOrMethod])) {
