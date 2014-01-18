@@ -9,7 +9,7 @@ Each chart type shall be encapsulated in its own .js file and shall be declared 
 
 Please let me know if you would like to contribute! Any help or suggestions are welcome, as I am new to github and jQuery plugin programming.
 
-To make a simple line chart, create an HTML5 canvas and call `.flinkchart()` on it, making sure to feed flinkCharts an options hash that includes a hash called `lines` with arrays `xData` and `yData`:
+To make a simple line chart, create an HTML5 canvas with `data-chart="line"` as an attribute and call `.flinkchart()` on it, making sure to feed flinkCharts an options hash that includes a hash called `lines` with arrays `xData` and `yData`:
 
 ```
 $('#graph').flinkchart({
