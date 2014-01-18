@@ -24,7 +24,7 @@ $('#graph').flinkchart({
 
 This call currently produces:
 
-![FlinkCharts Line Chart](/images/flinkchart::linechart2014-01-18::14:59:55.png "Basic Line Chart")
+![FlinkCharts Line Chart](/images/basic_line.png "Basic Line Chart")
 
 Documentation is coming; currently, the line graph supports discrete and continuous standards for plotting x and y data. For example, if your entire data set has only 5 values that y can be set to, use the `discreteY: true` option, and the same for x values. However, if you are, for example, graphing a data set that includes points that are not evenly distributed in x, use continuous scaling (the default), and the same goes for non-even distributions in y-data.
 
