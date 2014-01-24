@@ -8,18 +8,12 @@
 			gridLineWidth: 1.5,
 			gridSubdivide: 8,
 			gridSubWidth: 1.5,
-			gridSubStyle: "#AAA",
-			showBg: true,
-			bgColor: "#FFFFFF",
-			cellSize: 10,
+			gridSubColor: "#AAA",
+			cellWidth: 1,
+			cellHeight: 1,
 			lineColor: "#000",
 			lineWidth: 2,
-			showXAxis: false,
-			showYAxis: false,
-			xAxisColor: "#000",
-			yAxisColor: "#000",
-			xAxisWidth: 2,
-			yAxisWidth: 2
+
 		},
 		methods: {
 			
@@ -48,7 +42,7 @@
 					this.xSlotUnit = this.xWidth / (this.opts.xSlots.length);
 					this.xSlotCount = this.opts.xSlots.length;
 				} else {
-					this.xSlotUnit = this.opts.cellSize;
+					this.xSlotUnit = this.opts.cellWidth * this.xScale;
 					this.xSlotCount = Math.ceil(this.xWidth / this.xSlotUnit);
 				}
 				if(this.opts.ySlots) {
@@ -56,7 +50,7 @@
 					this.ySlotCount = this.opts.ySlots.length;
 					this.ySlotUnit = this.yHeight / (this.opts.ySlots.length);
 				} else {
-					this.ySlotUnit = this.opts.cellSize;
+					this.ySlotUnit = this.opts.cellHeight * this.yScale;
 					this.ySlotCount = Math.ceil(this.yHeight / this.ySlotUnit);
 				}
 				
@@ -107,6 +101,10 @@
 			},
 			
 			getXSlot: function(val) {
+				return this.opts.xSlots.indexOf(val) * this.xSlotUnit + this.opts.xPad + 0.5;
+			},
+
+			getXSlotIdx: function(val) {
 				return val * this.xSlotUnit + this.opts.xPad + 0.5;
 			},
 			
@@ -115,6 +113,10 @@
 			},
 			
 			getYSlot: function(val) {
+				return this.el.height() - (this.opts.ySlots.indexOf(val) * this.ySlotUnit + this.opts.yPad) + 0.5;
+			},
+			
+			getYSlotIdx: function(val) {
 				return this.el.height() - (val * this.ySlotUnit + this.opts.yPad) + 0.5;
 			},
 			
@@ -135,57 +137,58 @@
 				//set styles here
 				this.ctx.strokeStyle = this.opts.gridLineColor;
 				this.ctx.lineWidth = this.opts.gridLineWidth;
-				if(this.opts.gridSubdivide) {
-					for(var i = 0; i <= this.xSlotCount; i++) {
+				//require gridSubdivide to be an integer
+				if(this.opts.gridSubdivide && this.opts.gridSubdivide === parseInt(this.opts.gridSubdivide)) {
+					for(var i = 1; i <= this.xSlotCount; i++) {
 						if(i % this.opts.gridSubdivide == 0) {
 							continue;
 						} else {
 							this.ctx.beginPath();
 							this.ctx.lineWidth = this.opts.gridLineWidth;
 							this.ctx.strokeStyle = this.opts.gridLineColor;
-							this.ctx.moveTo(this.getXSlot(i), this.getYSlot(0));
-							this.ctx.lineTo(this.getXSlot(i), this.getYSlot(this.ySlotCount));
+							this.ctx.moveTo(this.getXSlotIdx(i), this.getYSlotIdx(0));
+							this.ctx.lineTo(this.getXSlotIdx(i), this.getYSlotIdx(this.ySlotCount));
 							this.ctx.stroke();
 						}
 					}
-					for(var i = 0; i <= this.ySlotCount; i++) {
+					for(var i = 1; i <= this.ySlotCount; i++) {
 						if(i % this.opts.gridSubdivide == 0) {
 							continue;
 						} else {
 							this.ctx.beginPath();
-							this.ctx.moveTo(this.getXSlot(0), this.getYSlot(i));
-							this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(i));
+							this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(i));
+							this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(i));
 							this.ctx.stroke();
 							this.ctx.closePath();
 						}
 					}
 					this.ctx.lineWidth = this.opts.gridSubWidth;
-					this.ctx.strokeStyle = this.opts.gridSubStyle;
+					this.ctx.strokeStyle = this.opts.gridSubColor;
 					for(var i = 0; i <= this.xSlotCount; i += this.opts.gridSubdivide) {
 						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlot(i), this.getYSlot(0));
-						this.ctx.lineTo(this.getXSlot(i), this.getYSlot(this.ySlotCount));
+						this.ctx.moveTo(this.getXSlotIdx(i), this.getYSlotIdx(0));
+						this.ctx.lineTo(this.getXSlotIdx(i), this.getYSlotIdx(this.ySlotCount));
 						this.ctx.stroke();
 					}
 					for(var i = 0; i <= this.ySlotCount; i += this.opts.gridSubdivide) {
 						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlot(0), this.getYSlot(i));
-						this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(i));
+						this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(i));
+						this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(i));
 						this.ctx.stroke();
 						this.ctx.closePath();
 					}
 				} else {
-					for(var i = 0; i <= this.xSlotCount; i++) {
+					for(var i = 1; i <= this.xSlotCount; i++) {
 						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlot(i), this.getYSlot(0));
-						this.ctx.lineTo(this.getXSlot(i), this.getYSlot(this.ySlotCount));
+						this.ctx.moveTo(this.getXSlotIdx(i), this.getYSlotIdx(0));
+						this.ctx.lineTo(this.getXSlotIdx(i), this.getYSlotIdx(this.ySlotCount));
 						this.ctx.stroke();
 						this.ctx.closePath();
 					}
-					for(var i = 0; i <= this.ySlotCount; i++) {
+					for(var i = 1; i <= this.ySlotCount; i++) {
 						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlot(0), this.getYSlot(i));
-						this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(i));
+						this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(i));
+						this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(i));
 						this.ctx.stroke();
 						this.ctx.closePath();
 					}
@@ -302,8 +305,8 @@
 				this.ctx.beginPath();
 				this.ctx.strokeStyle = this.opts.xAxisColor;
 				this.ctx.lineWidth = this.opts.xAxisWidth;
-				this.ctx.moveTo(this.getXSlot(0), this.getYSlot(0));
-				this.ctx.lineTo(this.getXSlot(this.xSlotCount), this.getYSlot(0));
+				this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(0));
+				this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(0));
 				this.ctx.stroke();
 				this.ctx.closePath();
 				this.ctx.restore();
@@ -315,8 +318,8 @@
 				this.ctx.beginPath();
 				this.ctx.strokeStyle = this.opts.yAxisColor;
 				this.ctx.lineWidth = this.opts.yAxisWidth;
-				this.ctx.moveTo(this.getXSlot(0), this.getYSlot(0));
-				this.ctx.lineTo(this.getXSlot(0), this.getYSlot(this.ySlotCount));
+				this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(0));
+				this.ctx.lineTo(this.getXSlotIdx(0), this.getYSlotIdx(this.ySlotCount));
 				this.ctx.stroke();
 				this.ctx.closePath();
 				this.ctx.restore();
@@ -331,7 +334,8 @@
 			},
 			
 			draw: function() {
-				if(this.opts.showBg) {
+				if(typeof this.opts.bgColor !== 'undefined' ||
+				   typeof this.opts.bgImage !== 'undefined') {
 					this.drawBackground();
 				}
 				if(this.opts.showGrid) {
@@ -339,11 +343,13 @@
 					this.drawGrid();
 				}
 				this.drawLines();
-				if(this.opts.showXAxis) {
+				if(typeof this.opts.xAxisColor !== 'undefined' &&
+				   typeof this.opts.xAxisWidth !== 'undefined') {
 					//TODO: check for necessary settings
 					this.drawXAxis();
 				}
-				if(this.opts.showYAxis) {
+				if(typeof this.opts.yAxisColor !== 'undefined' &&
+				   typeof this.opts.yAxisWidth !== 'undefined') {
 					//TODO: check for necessary settings
 					this.drawYAxis();
 				}
