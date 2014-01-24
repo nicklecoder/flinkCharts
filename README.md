@@ -103,6 +103,9 @@ You can start your chart file using the following template:
       },
    
       methods: {
+         init: function(el, opts) {
+         },
+         ...
       },
    
       PieChart: function(el, opts) {
