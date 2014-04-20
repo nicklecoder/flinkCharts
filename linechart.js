@@ -15,12 +15,12 @@
             this.maxX = minMaxX[1] * 1;
             this.minY = minMaxY[0];
             this.maxY = minMaxY[1];
-            var xRange = this.maxX - this.minX;
-            var yRange = this.maxY - this.minY;
+            this.xRange = this.maxX - this.minX;
+            this.yRange = this.maxY - this.minY;
             this.width = this.$el.width() - (2 * this.opts.xPad) - this.opts.xLabelPad;
             this.height = this.$el.height() - (2 * this.opts.yPad) - this.opts.yLabelPad;
-            this.xScale = this.width/xRange;
-            this.yScale = this.height/yRange;
+            this.xScale = this.width/this.xRange;
+            this.yScale = this.height/this.yRange;
             
             this.clear().draw();
         };
@@ -31,17 +31,13 @@
                 yPad: 0,
                 xLabelPad: 0,
                 yLabelPad: 0,
-                /*gridLineColor: "#DDD",
-                gridLineWidth: 1.5,
-                gridSubDivide: 8,
-                gridSubWidth: 1.5,
-                gridSubColor: "#AAA",
-                cellWidth: 1,
-                cellHeight: 1,*/
-                lineColor: "#999999",
+                lineColor: "#000",
                 lineWidth: 1,
-                axisColor: "#99999",
-                axisWidth: 2
+                axisColor: "#000",
+                axisWidth: 2,
+                gridWidth: 1,
+                gridColor: "#777777",
+                /*xGridUnit: 1 //not initialized; used to detect if we display xgrid*/
             },
             
             getMinMaxY: function() {
@@ -101,35 +97,70 @@
                 if(val < this.minX || val > this.maxX) {
                     throw new Exception("flinkCharts: invalid line data");
                 }
-                return (((val*1) - this.minX) * this.xScale) + 0.5 + this.opts.xPad + this.opts.xLabelPad;
+                return parseInt((((val*1) - this.minX) * this.xScale) + this.opts.xPad + this.opts.xLabelPad) + 0.5;
             },
             
             getYPixel: function(val) {
                 if(val < this.minY || val > this.maxY) {
                     throw new Exception("flinkCharts: invalid line data");
                 }
-                var padding = 0.5 + this.opts.yPad + this.opts.yLabelPad;
-                return this.$el.height() - (((val - this.minY) * this.yScale) + padding);
+                var padding = this.opts.yPad + this.opts.yLabelPad;
+                return parseInt(this.$el.height() - (((val - this.minY) * this.yScale) + padding)) - 0.5;
             },
             
             drawBackground: function() {
+                console.log("ll 112");
                 this.ctx.save();
                 if(typeof this.opts.bgImage !== "undefined") {
                     //TODO: set background image
                     console.log("Background Image not implemented");
                 } else {
                     this.ctx.fillStyle = this.opts.bgColor;
-                    this.ctx.fillRect(0, 0, this.el.width(), this.el.height());
+                    this.ctx.fillRect(0, 0, this.$el.width(), this.$el.height());
                 }
                 this.ctx.restore();
             },
             
             drawXGrid: function() {
-                console.log("draw xgrid not yet implemented");
+                this.ctx.save();
+                this.ctx.lineWidth = this.opts.gridWidth;
+                this.ctx.strokeStyle = this.opts.gridColor;
+                var x = this.minX;
+                while(x < this.maxX) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.getXPixel(x), this.getYPixel(this.minY));
+                    this.ctx.lineTo(this.getXPixel(x), this.getYPixel(this.maxY));
+                    this.ctx.stroke();
+                    this.ctx.closePath();
+                    x += this.opts.xGridUnit;
+                }
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.getXPixel(this.maxX), this.getYPixel(this.minY));
+                this.ctx.lineTo(this.getXPixel(this.maxX), this.getYPixel(this.maxY));
+                this.ctx.stroke();
+                this.ctx.closePath();
+                this.ctx.restore();
             },
             
             drawYGrid: function() {
-                console.log("draw ygrid not yet implemented");
+                this.ctx.save();
+                this.ctx.lineWidth = this.opts.gridWidth;
+                this.ctx.strokeStyle = this.opts.gridColor;
+                var y = this.minY;
+                while(y < this.maxY) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.getXPixel(this.minX), this.getYPixel(y));
+                    this.ctx.lineTo(this.getXPixel(this.maxX), this.getYPixel(y));
+                    this.ctx.stroke();
+                    this.ctx.closePath();
+                    y += this.opts.yGridUnit;
+                }
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.getXPixel(this.minX), this.getYPixel(this.maxY));
+                this.ctx.lineTo(this.getXPixel(this.maxX), this.getYPixel(this.maxY));
+                this.ctx.stroke();
+                this.ctx.closePath();
+                this.ctx.restore();
             },
             
             drawLines: function() {
@@ -197,10 +228,13 @@
             
             draw: function() {
                 //call each draw function in the order above if options are set
-                if(this.opts.showXGrid) {
+                if(this.opts.hasOwnProperty("bgColor") || this.opts.hasOwnProperty("bgImage")) {
+                    this.drawBackground();
+                }
+                if(this.opts.hasOwnProperty("xGridUnit")) {
                     this.drawXGrid();
                 }
-                if(this.opts.showYGrid) {
+                if(this.opts.hasOwnProperty("yGridUnit")) {
                     this.drawYGrid();
                 }
                 this.drawLines();
