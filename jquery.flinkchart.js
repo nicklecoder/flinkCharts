@@ -3,7 +3,7 @@
 	
 	$.fn.flinkchart = function(optsOrMethod) {
 		return $(this).filter("canvas").each(function() {
-			if(!$.data(this, "api_" + name)) {
+			if(!$.data(this, name)) {
 				if(optsOrMethod && $.type(optsOrMethod) !== "object") {
 					throw new Error("flinkCharts: invalid options format");
 				}
@@ -15,18 +15,21 @@
 				} else {
 					throw new Error("flinkCharts: no chart parameter given");
 				}
+                                /**
+                                 * Add new chart types to this switch statement
+                                 */
 				switch(type) {
-					case "line":
-						if(typeof $.fn.flinkchart.line.LineChart === "function") {
-							$.data(this, 'api_' + name, new $.fn.flinkchart.line.LineChart($(this), optsOrMethod));
+					case "lineChart":
+						if(typeof $.fn.flinkchart.LineChart === "function") {
+							$.data(this, name, new $.fn.flinkchart.LineChart($(this), optsOrMethod));
 						}
 						break;
 					default:
 						throw new Error("flinkCharts: " + type + " is not a valid chart type");
 						break;
 				}
-			} else if($.isFunction($(this).data("api_" + name)[optsOrMethod])) {
-				$(this).data("api_" + name)[optsOrMethod]();
+			} else if($.isFunction($(this).data(name)[optsOrMethod])) {
+				$(this).data(name)[optsOrMethod]();
 			}
 		});
 	}
