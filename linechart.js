@@ -1,383 +1,221 @@
 (function($) {
 
-	$.fn.flinkchart.line = {
-		defaults: {
-			xPad: 30,
-			yPad: 30,
-			gridLineColor: "#DDDDDD",
-			gridLineWidth: 1.5,
-			gridSubdivide: 8,
-			gridSubWidth: 1.5,
-			gridSubColor: "#AAA",
-			cellWidth: 1,
-			cellHeight: 1,
-			lineColor: "#000",
-			lineWidth: 2,
-
-		},
-		methods: {
-			
-			init: function(el, opts) {
-				this.el = el;
-				if(typeof opts === "undefined") {
-					throw new Error("flinkCharts: no options defined");
-				}
-				this.lines = opts.lines;
-				delete opts["lines"];
-				
-				this.opts = $.extend({}, $.fn.flinkchart.line.defaults, opts);
-				this.ctx = this.el[0].getContext("2d");
-				
-				//pre-compute some values
-				this.xWidth = (this.el.width() - 2 * this.opts.xPad);
-				this.yHeight = (this.el.height() - 2 * this.opts.yPad);
-				this.minMaxX = this.getMinMaxX();
-				this.minMaxY = this.getMinMaxY();
-				this.xRange = this.minMaxX[1] - this.minMaxX[0];
-				this.xScale = this.xWidth / this.xRange;
-				this.yRange = this.minMaxY[1] - this.minMaxX[0];
-				this.yScale = this.yHeight / this.yRange;
-				if(this.opts.xSlots) {
-					this.xSlots = this.opts.xSlots;
-					this.xSlotUnit = this.xWidth / (this.opts.xSlots.length);
-					this.xSlotCount = this.opts.xSlots.length;
-				} else {
-					this.xSlotUnit = this.opts.cellWidth * this.xScale;
-					this.xSlotCount = Math.ceil(this.xWidth / this.xSlotUnit);
-				}
-				if(this.opts.ySlots) {
-					this.ySlots = this.opts.ySlots;
-					this.ySlotCount = this.opts.ySlots.length;
-					this.ySlotUnit = this.yHeight / (this.opts.ySlots.length);
-				} else {
-					this.ySlotUnit = this.opts.cellHeight * this.yScale;
-					this.ySlotCount = Math.ceil(this.yHeight / this.ySlotUnit);
-				}
-				
-				//return this for chaining
-				return this;
-			},
-			
-			/**
-			 * Returns min/max y values from data
-			 */
-			getMinMaxY: function() {
-				var min = null;
-				var max = null;
-				for(var line in this.lines) {
-					line = this.lines[line];
-					for(var i = 0; i < line.yData.length; i++) {
-						if(min == null || min > line.yData[i]) {
-							min = line.yData[i];
-						}
-						if(max == null || max < line.yData[i]) {
-							max = line.yData[i];
-						}
-					}
-				}
-				return [min, max];
-			},
-			
-			/**
-			 * Returns min/max x values from data
-			 */
-			getMinMaxX: function() {
-				var min = null;
-				var max = null;
-				for(var line in this.lines) {
-					line = this.lines[line];
-					if(min == null || min > line.xData[0]) {
-						min = line.xData[0];
-					}
-					if(max == null || max < line.xData[line.xData.length - 1]) {
-						max = line.xData[line.xData.length - 1];
-					}
-				}
-				return [min, max];
-			},
-			
-			getXPixel: function(val) {
-				return (val - this.minMaxX[0]) * this.xScale + this.opts.xPad + 0.5;
-			},
-			
-			getXSlot: function(val) {
-				return this.opts.xSlots.indexOf(val) * this.xSlotUnit + this.opts.xPad + 0.5;
-			},
-
-			getXSlotIdx: function(val) {
-				return val * this.xSlotUnit + this.opts.xPad + 0.5;
-			},
-			
-			getYPixel: function(val) {
-				return this.el.height() - ((val - this.minMaxY[0]) * this.yScale + this.opts.yPad) + 0.5;
-			},
-			
-			getYSlot: function(val) {
-				return this.el.height() - (this.opts.ySlots.indexOf(val) * this.ySlotUnit + this.opts.yPad) + 0.5;
-			},
-			
-			getYSlotIdx: function(val) {
-				return this.el.height() - (val * this.ySlotUnit + this.opts.yPad) + 0.5;
-			},
-			
-			drawBackground: function() {
-				this.ctx.save();
-				if(typeof this.opts.bgImage !== "undefined") {
-					//TODO: set background image
-					console.log("Background Image not implemented");
-				} else {
-					this.ctx.fillStyle = this.opts.bgColor;
-					this.ctx.fillRect(0, 0, this.el.width(), this.el.height());
-				}
-				this.ctx.restore();
-			},
-			
-			drawGrid: function() {
-				this.ctx.save();
-				//set styles here
-				this.ctx.strokeStyle = this.opts.gridLineColor;
-				this.ctx.lineWidth = this.opts.gridLineWidth;
-				//require gridSubdivide to be an integer
-				if(this.opts.gridSubdivide && this.opts.gridSubdivide === parseInt(this.opts.gridSubdivide)) {
-					for(var i = 1; i <= this.xSlotCount; i++) {
-						if(i % this.opts.gridSubdivide == 0) {
-							continue;
-						} else {
-							this.ctx.beginPath();
-							this.ctx.lineWidth = this.opts.gridLineWidth;
-							this.ctx.strokeStyle = this.opts.gridLineColor;
-							this.ctx.moveTo(this.getXSlotIdx(i), this.getYSlotIdx(0));
-							this.ctx.lineTo(this.getXSlotIdx(i), this.getYSlotIdx(this.ySlotCount));
-							this.ctx.stroke();
-						}
-					}
-					for(var i = 1; i <= this.ySlotCount; i++) {
-						if(i % this.opts.gridSubdivide == 0) {
-							continue;
-						} else {
-							this.ctx.beginPath();
-							this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(i));
-							this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(i));
-							this.ctx.stroke();
-							this.ctx.closePath();
-						}
-					}
-					this.ctx.lineWidth = this.opts.gridSubWidth;
-					this.ctx.strokeStyle = this.opts.gridSubColor;
-					for(var i = 0; i <= this.xSlotCount; i += this.opts.gridSubdivide) {
-						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlotIdx(i), this.getYSlotIdx(0));
-						this.ctx.lineTo(this.getXSlotIdx(i), this.getYSlotIdx(this.ySlotCount));
-						this.ctx.stroke();
-					}
-					for(var i = 0; i <= this.ySlotCount; i += this.opts.gridSubdivide) {
-						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(i));
-						this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(i));
-						this.ctx.stroke();
-						this.ctx.closePath();
-					}
-				} else {
-					for(var i = 1; i <= this.xSlotCount; i++) {
-						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlotIdx(i), this.getYSlotIdx(0));
-						this.ctx.lineTo(this.getXSlotIdx(i), this.getYSlotIdx(this.ySlotCount));
-						this.ctx.stroke();
-						this.ctx.closePath();
-					}
-					for(var i = 1; i <= this.ySlotCount; i++) {
-						this.ctx.beginPath();
-						this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(i));
-						this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(i));
-						this.ctx.stroke();
-						this.ctx.closePath();
-					}
-				}
-				this.ctx.restore();
-			},
-			
-			drawUnderfill: function() {
-				console.log("drawing underfill not implemented");
-			},
-			
-			drawLines: function() {
-				this.ctx.save();
-				if(this.xSlots) {
-					if(this.ySlots) {
-						for(var line in this.lines) {
-							line = this.lines[line];
-							//1: set styles
-							if(line.style) {
-								//if line-specific styles, use them.
-								this.ctx.strokeStyle = line.style.color;
-								this.ctx.lineWidth = line.style.width;
-							} else {
-								//else use globals
-								this.ctx.strokeStyle = this.opts.lineColor;
-								this.ctx.lineWidth = this.opts.lineWidth;
-							}
-							//2: loop through points
-							this.ctx.beginPath();
-							this.ctx.moveTo(this.getXSlot(line.xData[0]), this.getYSlot(line.yData[0]));
-							for(var i = 1; i < line.xData.length; i++) {
-								this.ctx.lineTo(this.getXSlot(line.xData[i]), this.getYSlot(line.yData[i]));
-								this.ctx.stroke();
-							}
-							this.ctx.closePath();
-						}
-					} else {
-						for(var line in this.lines) {
-							line = this.lines[line];
-							//1: set styles
-							if(line.style) {
-								//if line-specific styles, use them.
-								this.ctx.strokeStyle = line.style.color;
-								this.ctx.lineWidth = line.style.width;
-							} else {
-								//else use globals
-								this.ctx.strokeStyle = this.opts.lineColor;
-								this.ctx.lineWidth = this.opts.lineWidth;
-							}
-							//2: loop through points
-							this.ctx.beginPath();
-							this.ctx.moveTo(this.getXSlot(line.xData[0]), this.getYPixel(line.yData[0]));
-							for(var i = 1; i < line.xData.length; i++) {
-								this.ctx.lineTo(this.getXSlot(line.xData[i]), this.getYPixel(line.yData[i]));
-								this.ctx.stroke();
-							}
-							this.ctx.closePath();
-						}
-					}
-				} else {
-					if(this.ySlots) {
-						for(var line in this.lines) {
-							line = this.lines[line];
-							//1: set styles
-							if(line.style) {
-								//if line-specific styles, use them.
-								this.ctx.strokeStyle = line.style.color;
-								this.ctx.lineWidth = line.style.width;
-							} else {
-								//else use globals
-								this.ctx.strokeStyle = this.opts.lineColor;
-								this.ctx.lineWidth = this.opts.lineWidth;
-							}
-							//2: loop through points
-							this.ctx.beginPath();
-							this.ctx.moveTo(this.getXPixel(line.xData[0]), this.getYSlot(line.yData[0]));
-							for(var i = 1; i < line.xData.length; i++) {
-								this.ctx.lineTo(this.getXPixel(line.xData[i]), this.getYSlot(line.yData[i]));
-								this.ctx.stroke();
-							}
-							this.ctx.closePath();
-						}
-					} else {
-						//continuous x, continuous y
-						for(var line in this.lines) {
-							line = this.lines[line];
-							//1: set styles
-							if(line.style) {
-								//if line-specific styles, use them.
-								this.ctx.strokeStyle = line.style.color;
-								this.ctx.lineWidth = line.style.width;
-							} else {
-								//else use globals
-								this.ctx.strokeStyle = this.opts.lineColor;
-								this.ctx.lineWidth = this.opts.lineWidth;
-							}
-							//2: loop through points
-							this.ctx.beginPath();
-							this.ctx.moveTo(this.getXPixel(line.xData[0]), this.getYPixel(line.yData[0]));
-							for(var i = 1; i < line.xData.length; i++) {
-								this.ctx.lineTo(this.getXPixel(line.xData[i]), this.getYPixel(line.yData[i]));
-								this.ctx.stroke();
-							}
-							this.ctx.closePath();
-						}
-					}
-				}
-				this.ctx.restore();
-			},
-			
-			drawXAxis: function() {
-				this.ctx.save();
-				//1: set axis styles
-				this.ctx.beginPath();
-				this.ctx.strokeStyle = this.opts.xAxisColor;
-				this.ctx.lineWidth = this.opts.xAxisWidth;
-				this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(0));
-				this.ctx.lineTo(this.getXSlotIdx(this.xSlotCount), this.getYSlotIdx(0));
-				this.ctx.stroke();
-				this.ctx.closePath();
-				this.ctx.restore();
-			},
-			
-			drawYAxis: function() {
-				this.ctx.save();
-				//1: set axis styles
-				this.ctx.beginPath();
-				this.ctx.strokeStyle = this.opts.yAxisColor;
-				this.ctx.lineWidth = this.opts.yAxisWidth;
-				this.ctx.moveTo(this.getXSlotIdx(0), this.getYSlotIdx(0));
-				this.ctx.lineTo(this.getXSlotIdx(0), this.getYSlotIdx(this.ySlotCount));
-				this.ctx.stroke();
-				this.ctx.closePath();
-				this.ctx.restore();
-			},
-			
-			drawXLabels: function() {
-				console.log("drawing x-labels not implemented");
-			},
-			
-			drawYLabels: function() {
-				console.log("drawing y-labels not implemented");
-			},
-			
-			draw: function() {
-				if(typeof this.opts.bgColor !== 'undefined' ||
-				   typeof this.opts.bgImage !== 'undefined') {
-					this.drawBackground();
-				}
-				if(this.opts.showGrid) {
-					//TODO: check for necessary settings
-					this.drawGrid();
-				}
-				this.drawLines();
-				if(typeof this.opts.xAxisColor !== 'undefined' &&
-				   typeof this.opts.xAxisWidth !== 'undefined') {
-					//TODO: check for necessary settings
-					this.drawXAxis();
-				}
-				if(typeof this.opts.yAxisColor !== 'undefined' &&
-				   typeof this.opts.yAxisWidth !== 'undefined') {
-					//TODO: check for necessary settings
-					this.drawYAxis();
-				}
-				if(this.opts.showXLables) {
-					//TODO: check for necessary settings
-					this.drawXLabels();
-				}
-				if(this.opts.showXLables) {
-					//TODO: check for necessary settings
-					this.drawXLabels();
-				}
-				
-				return this; //for chaining
-			},
-			
-			clear: function() {
-				this.ctx.clearRect(0, 0, this.el.width(), this.el.height());
-				return this; //for chaining
-			},
-		},
-		/************************************ END METHODS *****************/
-		
-		LineChart: function(el, opts) {
-			for(var method in $.fn.flinkchart.line.methods) {
-				this[method] = $.fn.flinkchart.line.methods[method];
-			}
-			//clear before draw; there might be stuff there.
-			this.init(el, opts).clear().draw();
-		}
-	}
+        $.fn.flinkchart.LineChart = function($el, opts) {
+            this.$el = $el;
+            this.lines = opts.lines;
+            delete opts.lines;
+            this.opts = opts;
+            this.ctx = $el[0].getContext("2d");
+            this.opts = $.extend({}, this.defaults, opts);
+            
+            //precompute scaling factors
+            var minMaxX = this.getMinMaxX();
+            var minMaxY = this.getMinMaxY();
+            this.minX = minMaxX[0] * 1; //support dates; * by 1 to get integer
+            this.maxX = minMaxX[1] * 1;
+            this.minY = minMaxY[0];
+            this.maxY = minMaxY[1];
+            var xRange = this.maxX - this.minX;
+            var yRange = this.maxY - this.minY;
+            this.width = this.$el.width() - (2 * this.opts.xPad) - this.opts.xLabelPad;
+            this.height = this.$el.height() - (2 * this.opts.yPad) - this.opts.yLabelPad;
+            this.xScale = this.width/xRange;
+            this.yScale = this.height/yRange;
+            
+            this.clear().draw();
+        };
+        
+        $.fn.flinkchart.LineChart.prototype = {
+            defaults: {
+                xPad: 0,
+                yPad: 0,
+                xLabelPad: 0,
+                yLabelPad: 0,
+                /*gridLineColor: "#DDD",
+                gridLineWidth: 1.5,
+                gridSubDivide: 8,
+                gridSubWidth: 1.5,
+                gridSubColor: "#AAA",
+                cellWidth: 1,
+                cellHeight: 1,*/
+                lineColor: "#999999",
+                lineWidth: 1,
+                axisColor: "#99999",
+                axisWidth: 2
+            },
+            
+            getMinMaxY: function() {
+                var maxArr = [];
+                var minArr = [];
+                if(!this.lines[0].hasOwnProperty("y")) {
+                    throw new Exception("flinkCharts: a line is missing y-data.");
+                }
+                for(var i = 0; i < this.lines.length; i++) {
+                    var line = this.lines[i];
+                    if(!line.hasOwnProperty("y")) {
+                        throw new Exception("flinkCharts: a line is missing y-data.");
+                    }
+                    maxArr.push(Math.max.apply(null, line.y));
+                    minArr.push(Math.min.apply(null, line.y));
+                }
+                var max = Math.max.apply(null, maxArr);
+                var min = Math.min.apply(null, minArr);
+                return [min, max];
+            },
+            
+            getMinMaxX: function() {
+                var maxArr = [];
+                var minArr = [];
+                if($.type(this.lines[0].x[0]) === "date") {
+                    //support dates in x
+                    for(var i = 0; i < this.lines.length; i++) {
+                        var line = this.lines[i];
+                        maxArr.push(new Date(Math.max.apply(null, line.x)));
+                        minArr.push(new Date(Math.min.apply(null, line.x)));
+                    }
+                    var max = new Date(Math.max.apply(null, maxArr));
+                    var min = new Date(Math.min.apply(null, minArr));
+                    return [min, max];
+                } else {
+                    for(var i = 0; i < this.lines.length; i++) {
+                        var line = this.lines[i];
+                        if(line.hasOwnProperty("x")) {
+                            maxArr.push(Math.max.apply(null, line.x));
+                            minArr.push(Math.min.apply(null, line.x));
+                        } else {
+                            //no x vals supplied, use array indexes
+                            if(!line.hasOwnProperty("y")) {
+                                throw new Exception("flinkCharts: a line is missing x- and y-data.");
+                            }
+                            maxArr.push(line.y.length);
+                            minArr.push(0);
+                        }
+                    }
+                    var max = Math.max.apply(null, maxArr);
+                    var min = Math.min.apply(null, minArr);
+                    return [min, max];
+                }
+            },
+            
+            getXPixel: function(val) {
+                if(val < this.minX || val > this.maxX) {
+                    throw new Exception("flinkCharts: invalid line data");
+                }
+                return (((val*1) - this.minX) * this.xScale) + 0.5 + this.opts.xPad + this.opts.xLabelPad;
+            },
+            
+            getYPixel: function(val) {
+                if(val < this.minY || val > this.maxY) {
+                    throw new Exception("flinkCharts: invalid line data");
+                }
+                var padding = 0.5 + this.opts.yPad + this.opts.yLabelPad;
+                return this.$el.height() - (((val - this.minY) * this.yScale) + padding);
+            },
+            
+            drawBackground: function() {
+                this.ctx.save();
+                if(typeof this.opts.bgImage !== "undefined") {
+                    //TODO: set background image
+                    console.log("Background Image not implemented");
+                } else {
+                    this.ctx.fillStyle = this.opts.bgColor;
+                    this.ctx.fillRect(0, 0, this.el.width(), this.el.height());
+                }
+                this.ctx.restore();
+            },
+            
+            drawXGrid: function() {
+                console.log("draw xgrid not yet implemented");
+            },
+            
+            drawYGrid: function() {
+                console.log("draw ygrid not yet implemented");
+            },
+            
+            drawLines: function() {
+                for(var i = 0; i < this.lines.length; i++) {
+                    this.ctx.save();
+                    var line = this.lines[i];
+                    this.ctx.beginPath();
+                    this.ctx.lineWidth = line.hasOwnProperty("width") ? line.width : this.opts.lineWidth;
+                    this.ctx.strokeStyle = line.hasOwnProperty("color") ? line.color : this.opts.lineColor;
+                    if(line.hasOwnProperty("x")) {
+                        if(!line.hasOwnProperty("y")) {
+                            throw new Exception("flinkCharts: a line is missing y data");
+                        }
+                        this.ctx.moveTo(this.getXPixel(line.x[0]), this.getYPixel(line.y[0]));
+                        for(var j = 1; j < line.x.length; j++) {
+                            this.ctx.lineTo(this.getXPixel(line.x[j]), this.getYPixel(line.y[j]));
+                            this.ctx.stroke();
+                        }
+                    } else {
+                        if(!line.hasOwnProperty("y")) {
+                            throw new Exception("flinkCharts: a line is missing y data");
+                        }
+                        this.ctx.moveTo(this.getXPixel(0), this.getYPixel(line.y[0]));
+                        for(var j = 0; j < line.y.length; j++) {
+                            this.ctx.lineTo(this.getXPixel(j), this.getYPixel(line.y[j]));
+                            this.ctx.stroke();
+                        }
+                    }
+                    this.ctx.closePath();
+                    this.ctx.restore();
+                }
+            },
+            
+            drawXAxis: function() {
+                this.ctx.save();
+                this.ctx.lineWidth = this.opts.axisWidth;
+                this.ctx.strokeStyle = this.opts.axisColor;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.getXPixel(this.minX), this.getYPixel(this.minY));
+                this.ctx.lineTo(this.getXPixel(this.maxX), this.getYPixel(this.minY));
+                this.ctx.stroke();
+                this.ctx.closePath();
+                this.ctx.restore();
+            },
+            
+            drawYAxis: function() {
+                this.ctx.save();
+                this.ctx.beginPath();
+                this.ctx.lineWidth = this.opts.axisWidth;
+                this.ctx.strokeStyle = this.opts.axisColor;
+                this.ctx.moveTo(this.getXPixel(this.minX), this.getYPixel(this.minY));
+                this.ctx.lineTo(this.getXPixel(this.minX), this.getYPixel(this.maxY));
+                this.ctx.stroke();
+                this.ctx.closePath();
+                this.ctx.restore();
+            },
+            
+            drawXLabels: function() {
+                console.log("X Labels not yet implemented");
+            },
+            
+            drawYLabels: function() {
+                console.log("Y Labels not yet implemented");
+            },
+            
+            draw: function() {
+                //call each draw function in the order above if options are set
+                if(this.opts.showXGrid) {
+                    this.drawXGrid();
+                }
+                if(this.opts.showYGrid) {
+                    this.drawYGrid();
+                }
+                this.drawLines();
+                if(this.opts.showXAxis) {
+                    this.drawXAxis();
+                }
+                if(this.opts.showYAxis) {
+                    this.drawYAxis();
+                }
+                return this; //for chaining
+            },
+            
+            clear: function() {
+                this.ctx.clearRect(0,0,this.$el.width,this.$el.height);
+                return this; //for chaining
+            }  
+        };
 })(jQuery);

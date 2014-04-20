@@ -19,7 +19,7 @@
                                  * Add new chart types to this switch statement
                                  */
 				switch(type) {
-					case "lineChart":
+					case "line":
 						if(typeof $.fn.flinkchart.LineChart === "function") {
 							$.data(this, name, new $.fn.flinkchart.LineChart($(this), optsOrMethod));
 						}
