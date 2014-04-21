@@ -7,7 +7,7 @@
             this.opts = opts;
             this.ctx = $el[0].getContext("2d");
             this.opts = $.extend({}, this.defaults, opts);
-            
+
             //precompute scaling factors
             var minMaxX = this.getMinMaxX();
             var minMaxY = this.getMinMaxY();
@@ -15,7 +15,15 @@
             this.maxX = minMaxX[1] * 1;
             this.minY = minMaxY[0];
             this.maxY = minMaxY[1];
+            var tmpYRange = this.maxY - this.minY;
+            if(this.opts.showXAxis && this.minY >= 0) {
+                this.minY = 0;
+            } else {
+                this.minY = this.minY - tmpYRange * this.opts.bottomMarginPct;
+            }
             this.xRange = this.maxX - this.minX;
+            this.yRange = this.maxY - this.minY;
+            this.maxY = this.maxY + this.yRange * this.opts.topMarginPct;
             this.yRange = this.maxY - this.minY;
             this.width = this.$el.width() - (2 * this.opts.xPad) - this.opts.xLabelPad;
             this.height = this.$el.height() - (2 * this.opts.yPad) - this.opts.yLabelPad;
@@ -35,9 +43,14 @@
                 lineWidth: 1,
                 axisColor: "#000",
                 axisWidth: 2,
-                gridWidth: 1,
+                showXAxis: false,
+                showYAxis: false,
+                gridLineWidth: 1,
                 gridColor: "#777777",
                 /*xGridUnit: 1 //not initialized; used to detect if we display xgrid*/
+                topMarginPct: 0.1,
+                bottomMarginPct: 0.1,
+                fuzzy: false,
             },
             
             getMinMaxY: function() {
@@ -97,7 +110,11 @@
                 if(val < this.minX || val > this.maxX) {
                     throw new Exception("flinkCharts: invalid line data");
                 }
-                return parseInt((((val*1) - this.minX) * this.xScale) + this.opts.xPad + this.opts.xLabelPad) + 0.5;
+                if(this.opts.fuzzy) {
+                    return parseInt((((val*1) - this.minX) * this.xScale) + this.opts.xPad + this.opts.xLabelPad);
+                } else {
+                    return parseInt((((val*1) - this.minX) * this.xScale) + this.opts.xPad + this.opts.xLabelPad) + 0.5;
+                }
             },
             
             getYPixel: function(val) {
@@ -105,7 +122,11 @@
                     throw new Exception("flinkCharts: invalid line data");
                 }
                 var padding = this.opts.yPad + this.opts.yLabelPad;
-                return parseInt(this.$el.height() - (((val - this.minY) * this.yScale) + padding)) - 0.5;
+                if(this.opts.fuzzy) {
+                    return parseInt(this.$el.height() - (((val - this.minY) * this.yScale) + padding));
+                } else {
+                    return parseInt(this.$el.height() - (((val - this.minY) * this.yScale) + padding)) - 0.5;
+                }
             },
             
             drawBackground: function() {
@@ -123,7 +144,7 @@
             
             drawXGrid: function() {
                 this.ctx.save();
-                this.ctx.lineWidth = this.opts.gridWidth;
+                this.ctx.lineWidth = this.opts.gridLineWidth;
                 this.ctx.strokeStyle = this.opts.gridColor;
                 var x = this.minX;
                 while(x < this.maxX) {
@@ -141,10 +162,10 @@
                 this.ctx.closePath();
                 this.ctx.restore();
             },
-            
+
             drawYGrid: function() {
                 this.ctx.save();
-                this.ctx.lineWidth = this.opts.gridWidth;
+                this.ctx.lineWidth = this.opts.gridLineWidth;
                 this.ctx.strokeStyle = this.opts.gridColor;
                 var y = this.minY;
                 while(y < this.maxY) {
@@ -194,13 +215,70 @@
                 }
             },
             
+            drawUnderfill: function() {
+                console.log("Not implemented");
+            },
+            
+            drawDots: function() {
+                this.ctx.save();
+                for(var i = 0; i < this.lines.length; i++) {
+                    var line = this.lines[i];
+                    var radius = line.hasOwnProperty("width") ? line.width + 2 : this.opts.lineWidth + 2;
+                    if(!line.hasOwnProperty("y")) {
+                        throw new Exception("flinkCharts: a line is missing y data");
+                    }
+                    if(line.hasOwnProperty("x")) {
+                        for(var j = 0; j < line.x.length; j++) {
+                            this.ctx.beginPath();
+                            this.ctx.arc(this.getXPixel(line.x[j]), this.getYPixel(line.y[j]), radius, 0, 2 * Math.PI, false);
+                            this.ctx.fillStyle = "white";
+                            this.ctx.globalAlpha = 0.5; //make the fill transparent
+                            this.ctx.fill();
+                            this.ctx.globalAlpha = 1;
+                            this.ctx.lineWidth = 1;
+                            this.ctx.strokeStyle = line.hasOwnProperty("color") ? line.color : this.opts.lineColor;
+                            this.ctx.stroke();
+                            this.ctx.closePath();
+                            this.ctx.beginPath();
+                            this.ctx.arc(this.getXPixel(line.x[j]), this.getYPixel(line.y[j]), radius/2, 0, 2 * Math.PI, false);
+                            this.ctx.fillStyle = line.hasOwnProperty("color") ? line.color : this.opts.lineColor;
+                            this.ctx.fill();
+                            this.ctx.strokeStyle = line.hasOwnProperty("color") ? line.color : this.opts.lineColor;
+                            this.ctx.stroke();
+                            this.ctx.closePath();
+                        }
+                    } else {
+                        for(var j = 0; j < line.y.length; j++) {
+                            this.ctx.beginPath();
+                            this.ctx.arc(this.getXPixel(j), this.getYPixel(line.y[j]), radius, 0, 2 * Math.PI, false);
+                            this.ctx.fillStyle = "white";
+                            this.ctx.globalAlpha = 0.5; //make the fill transparent
+                            this.ctx.fill();
+                            this.ctx.globalAlpha = 1;
+                            this.ctx.lineWidth = 1;
+                            this.ctx.strokeStyle = line.hasOwnProperty("color") ? line.color : this.opts.lineColor;
+                            this.ctx.stroke();
+                            this.ctx.closePath();
+                            this.ctx.beginPath();
+                            this.ctx.arc(this.getXPixel(j), this.getYPixel(line.y[j]), radius/2, 0, 2 * Math.PI, false);
+                            this.ctx.fillStyle = line.hasOwnProperty("color") ? line.color : this.opts.lineColor;
+                            this.ctx.fill();
+                            this.ctx.strokeStyle = line.hasOwnProperty("color") ? line.color : this.opts.lineColor;
+                            this.ctx.stroke();
+                            this.ctx.closePath();
+                        }
+                    }
+                }
+                this.ctx.restore();
+            },
+            
             drawXAxis: function() {
                 this.ctx.save();
                 this.ctx.lineWidth = this.opts.axisWidth;
                 this.ctx.strokeStyle = this.opts.axisColor;
                 this.ctx.beginPath();
-                this.ctx.moveTo(this.getXPixel(this.minX), this.getYPixel(this.minY));
-                this.ctx.lineTo(this.getXPixel(this.maxX), this.getYPixel(this.minY));
+                this.ctx.moveTo(this.getXPixel(this.minX), this.getYPixel(0));
+                this.ctx.lineTo(this.getXPixel(this.maxX), this.getYPixel(0));
                 this.ctx.stroke();
                 this.ctx.closePath();
                 this.ctx.restore();
@@ -238,6 +316,7 @@
                     this.drawYGrid();
                 }
                 this.drawLines();
+                this.drawDots();
                 if(this.opts.showXAxis) {
                     this.drawXAxis();
                 }
